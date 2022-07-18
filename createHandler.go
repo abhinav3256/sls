@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -20,5 +21,57 @@ func createHandler(c *gin.Context) {
 			return
 		}
 	}
+
+	_, err_result, _ := CreateLink(reqBody)
+
+	if err_result != "" {
+		res := gin.H{
+			"error": err_result,
+		}
+		//c.Writer.Header().Set("Content-Type", "application/json")
+
+		c.JSON(http.StatusBadRequest, res)
+		return
+	}
+
+	res := gin.H{
+		"success":   true,
+		"long_link": reqBody.LongLink,
+		//"short_link": "localhost:8082 "+short_link+"",
+	}
+	c.JSON(http.StatusOK, res)
+
+}
+
+func CreateLink(reqbody Link) (bool, string, int) {
+	var result = true
+	var err_responce = ""
+	var id = 0
+
+	sqlStatement := `
+INSERT INTO link(long_link,short_link)
+VALUES ($1,$2) RETURNING id`
+	err2 := DB.QueryRow(sqlStatement, reqbody.LongLink, "test").Scan(&id)
+
+	fmt.Println(err2)
+
+	if err2 != nil {
+		err_responce = "Something went wrong"
+		return false, err_responce, id
+	}
+	//log.Fatal("ERror in insert: ", err2)
+
+	// id, err := res.LastInsertId()
+	// fmt.Println(err)
+	// if err != nil {
+	// 	println("LastInsertId:", id)
+	// } else {
+	// 	println("Error:", err.Error())
+	// }
+
+	fmt.Println(id)
+
+	result = false
+	return result, err_responce, id
 
 }
