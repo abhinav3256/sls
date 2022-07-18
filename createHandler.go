@@ -12,11 +12,11 @@ func createHandler(c *gin.Context) {
 
 	if err != nil {
 		if err != nil {
-			res := gin.H{
+			ress := gin.H{
 				"error": err.Error(),
 			}
 
-			c.JSON(http.StatusBadRequest, res)
+			c.JSON(http.StatusBadRequest, ress)
 			return
 		}
 	}
