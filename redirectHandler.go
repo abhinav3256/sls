@@ -12,14 +12,6 @@ func redirectHandler(c *gin.Context) {
 
 	id, _ := c.Params.Get("id")
 
-	// if err != false {
-	// 	ress := gin.H{
-	// 		"error": "something went wrong",
-	// 	}
-
-	// 	c.JSON(http.StatusBadRequest, ress)
-	// 	return
-	// }
 	fmt.Println(id)
 	idd, _ := strconv.Atoi(id)
 	long_url := getLongURL(idd)

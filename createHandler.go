@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,11 +24,11 @@ func createHandler(c *gin.Context) {
 		}
 	}
 
-	_, err_result, _ := CreateLink(reqBody)
+	bool_result, count, id := isLongUrlExist(reqBody.LongLink)
 
-	if err_result != "" {
+	if bool_result == false {
 		res := gin.H{
-			"error": err_result,
+			"error": "something went wrong",
 		}
 		//c.Writer.Header().Set("Content-Type", "application/json")
 
@@ -34,24 +36,51 @@ func createHandler(c *gin.Context) {
 		return
 	}
 
-	res := gin.H{
-		"success":   true,
-		"long_link": reqBody.LongLink,
-		//"short_link": "localhost:8082 "+short_link+"",
+	if count > 0 {
+		idd := strconv.Itoa(id)
+		//short_link:=`localhost:8082:"+id"`
+		res := gin.H{
+			"success":    true,
+			"long_link":  reqBody.LongLink,
+			"short_link": "localhost:8082:" + idd,
+		}
+		c.JSON(http.StatusOK, res)
+		return
 	}
-	c.JSON(http.StatusOK, res)
+	if bool_result == true && (count == -1 || count == 0) {
+		_, err_result, result_id := CreateLink(reqBody)
+		result_idd := strconv.Itoa(result_id)
 
+		if err_result != "" {
+			res := gin.H{
+				"error": err_result,
+			}
+			//c.Writer.Header().Set("Content-Type", "application/json")
+
+			c.JSON(http.StatusBadRequest, res)
+			return
+		}
+
+		res := gin.H{
+			"success":    true,
+			"long_link":  reqBody.LongLink,
+			"short_link": "localhost:8082/" + result_idd,
+		}
+		c.JSON(http.StatusOK, res)
+	}
 }
 
 func CreateLink(reqbody Link) (bool, string, int) {
 	var result = true
 	var err_responce = ""
 	var id = 0
+	var currentTime = time.Now().UTC()
+	expire_at := currentTime.Add(time.Minute * 5)
 
 	sqlStatement := `
-INSERT INTO link(long_link,short_link)
-VALUES ($1,$2) RETURNING id`
-	err2 := DB.QueryRow(sqlStatement, reqbody.LongLink, "test").Scan(&id)
+INSERT INTO link(long_link,short_link,expire_at)
+VALUES ($1,$2,$3) RETURNING id`
+	err2 := DB.QueryRow(sqlStatement, reqbody.LongLink, "test", expire_at.Format(time.RFC3339Nano)).Scan(&id)
 
 	fmt.Println(err2)
 
@@ -59,15 +88,6 @@ VALUES ($1,$2) RETURNING id`
 		err_responce = "Something went wrong"
 		return false, err_responce, id
 	}
-	//log.Fatal("ERror in insert: ", err2)
-
-	// id, err := res.LastInsertId()
-	// fmt.Println(err)
-	// if err != nil {
-	// 	println("LastInsertId:", id)
-	// } else {
-	// 	println("Error:", err.Error())
-	// }
 
 	fmt.Println(id)
 

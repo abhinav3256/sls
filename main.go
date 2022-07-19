@@ -21,5 +21,8 @@ func setupRoutes(r *gin.Engine) {
 
 	r.POST("short_link/create", createHandler)
 	r.GET("/:id", redirectHandler)
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(404, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
+	})
 
 }
